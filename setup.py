@@ -16,7 +16,7 @@ setup(
     license="MIT",
     entry_points={
         'console_scripts': [
-            'kube = kube.main',
+            'kube = kube.main:main',
         ],
     },
     packages=['kube-cli'],
@@ -30,6 +30,9 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Software Development :: Libraries',
         'Topic :: Utilities',

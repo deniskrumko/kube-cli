@@ -22,6 +22,9 @@ TODO
 
 - Умный поиск pod'a
 - Readme
+- Обработка ошибок
+- Refactor
+- get_version (https://github.com/mathiasertl/fabric/blob/master/setup.py)
 
 1. Help
 kube

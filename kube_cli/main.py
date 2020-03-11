@@ -14,22 +14,27 @@ class KubeCLI:
 
     def run(self):
         """Run command."""
-        # Help
+        # kube help
         if not self.args or 'help' in self.args[0]:
             return self.show_help()
 
-        # Get list of pods/namespaces
+        # kube all ns
+        # kube all pods
         if self.args[0] == 'all':
             return self.show_all_pods_or_namespaces()
 
-        # Find pod/namespace
+        # kube find ns <...>
+        # kube find pod <...>
         if self.args[0] == 'find':
             return self.find_pod_or_namespace()
 
-        # Show list of pods for one namespace
+        # kube <namespace>
+        # kube <namespace> pods
         if len(self.args) == 1 or self.args[1] == 'pods':
             return self.show_pods_in_namespace()
 
+        # kube <namespace> <pod> logs
+        # kube <namespace> <pod> bash
         return self.run_pod_commands()
 
     def show_all_pods_or_namespaces(self):
@@ -323,5 +328,5 @@ class KubeCLI:
         return value.lower().replace(' ', '').replace('-', '').replace('_', '')
 
 
-if __name__ in ('kube_cli.main', '__main__'):
+def main():
     KubeCLI().run()
