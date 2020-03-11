@@ -1,13 +1,16 @@
+import os
 import subprocess
 import sys
 from typing import Iterable
 
 
 class KubeCLI:
+    """Main class for running kube CLI."""
 
     def __init__(self):
         """Initialize class instance."""
         self.args = sys.argv[1:]
+        self.timeout = 20
 
     def run(self):
         """Run command."""
@@ -23,8 +26,11 @@ class KubeCLI:
         if self.args[0] == 'find':
             return self.find_pod_or_namespace()
 
-        if len(self.args) == 1:
+        # Show list of pods for one namespace
+        if len(self.args) == 1 or self.args[1] == 'pods':
             return self.show_pods_in_namespace()
+
+        return self.run_pod_commands()
 
     def show_all_pods_or_namespaces(self):
         """Show all pods or namespaces."""
@@ -74,6 +80,7 @@ class KubeCLI:
             print(f'{namespace}{spaces}{name}')
 
     def show_pods_in_namespace(self):
+        """Show all pods in single namespace."""
         pattern = self.args[0].lower()
         results = sorted(self.find_pattern_in_data(
             pattern=pattern,
@@ -81,12 +88,22 @@ class KubeCLI:
         ))
         if results:
             if len(results) == 1:
+                # If one result
                 namespace = results[0]
+            elif self.args[0] in results:
+                # If there is exact match in results
+                namespace = self.args[0]
             else:
-                exit('TO DO')#TODO: Fix this
-            output = self.get_output(
-                f'kubectl get pods --namespace={namespace}'
-            )
+                # If there are many matches
+                self.print(
+                    '\n<y>Found more than 1 namespace with pattern '
+                    f'"{pattern}"</y>\n'
+                )
+                for result in results:
+                    print(f'  {result}')
+                return
+
+            output = self.get_output(f'get pods --namespace={namespace}')
             data = output[1:-1]
             self.print(f'\n<g>Available pods in namespace "{namespace}"</g>\n')
             for line in data:
@@ -152,6 +169,7 @@ class KubeCLI:
             ))
             if results:
                 self.print('\n<g>Found pods</g>\n')
+                # TODO: Show namespace too
                 self.print('\n'.join(
                     f'  {value.replace(pattern, f"<y>{pattern}</y>")}'
                     for value in results
@@ -164,6 +182,69 @@ class KubeCLI:
 
         # Help for command
         self.print('\nkube find pod <g><pattern></g>\t-- Find pod')
+
+    def run_pod_commands(self):
+        """Run pod commands."""
+        if len(self.args) == 3:
+            namespace = self.args[0].lower()
+            pod_name = self.args[1].lower()
+            command = self.args[2].lower()
+
+            results = []
+            clean_ns = self.clear_str(namespace)
+            clean_pod = self.clear_str(pod_name)
+            for line in self.get_all_pods():
+                val0, val1 = self.clear_str(line[0]), self.clear_str(line[1])
+                if clean_ns in val0 and clean_pod in val1:
+                    results.append((line[0], line[1]))
+
+            if len(results) == 1:
+                # If one result
+                namespace, pod_name = results[0]
+            elif (self.args[0], self.args[1]) in results:
+                # If there is exact match in results
+                namespace, pod_name = self.args[0], self.args[1]
+            elif results:
+                # If there are many matches
+                self.print('\n<y>Found more than namespace/pod</y>')
+                for namespace, pod in results:
+                    # TODO: Fix display
+                    print(f'{namespace}\t\t{pod}')
+                return
+            else:
+                self.print('\n<r>Cannot find namespace and pod</r>')
+                return
+
+            if command == 'logs':
+                return self.stream_pod_logs(namespace, pod_name)
+            if command == 'bash':
+                return self.run_bash_in_pod(namespace, pod_name)
+
+        self.print(
+            '\nkube <b><namespace></b> <b><pod></b> <g>logs</g>\t'
+            '-- Stream logs from pod'
+        )
+        self.print(
+            'kube <b><namespace></b> <b><pod></b> <g>bash</g>\t'
+            '-- Run bash in pod'
+        )
+
+    def stream_pod_logs(self, namespace, pod_name):
+        """Stream logs from pod."""
+        self.print(
+            f'\nNamespace:\t<g>{namespace}</g>\nPod name:\t<g>{pod_name}</g>\n'
+        )
+        input('Press enter to start streaming logs\n')
+        self.run_command(f'logs --namespace={namespace} -f {pod_name}')
+
+    def run_bash_in_pod(self, namespace, pod_name):
+        """Run bash in pod."""
+        self.print(
+            f'\nNamespace:\t<g>{namespace}</g>\nPod name:\t<g>{pod_name}</g>\n'
+        )
+        self.run_command(
+            f'exec -it --namespace={namespace} {pod_name} -- bash'
+        )
 
     def show_help(self):
         """Show help for program."""
@@ -179,6 +260,7 @@ class KubeCLI:
   kube <g>find ns</g> <b><pattern></b>\t\tFind namespace
   kube <g>find pod</g> <b><pattern></b>\t\tFind pod
   kube <b><namespace></b>\t\t\tList of pods in namespace
+  kube <b><namespace></b> <g>pods</g>\t\t\tList of pods in namespace
   kube <b><namespace></b> <b><pod></b> <g>logs</g>\t\tStream logs from pod
   kube <b><namespace></b> <b><pod></b> <g>bash</g>\t\tRun bash in pod
 
@@ -212,17 +294,21 @@ class KubeCLI:
         """Get output from kubectl executed command."""
         try:
             output_bytes = subprocess.check_output(
-                command.split(' '),
-                timeout=30,
+                ['kubectl'] + command.split(' '),
+                timeout=self.timeout,
             )
             return output_bytes.decode('utf-8').split('\n')
         except subprocess.TimeoutExpired:
             self.print('\n<r>Timeout on getting response from kubectl</r>')
             exit()
 
+    def run_command(self, command: str) -> list:
+        """Run kubectl command."""
+        os.system(f'kubectl {command}')
+
     def get_all_pods(self) -> list:
         """Get list of all pods."""
-        output = self.get_output('kubectl get pods --all-namespaces')
+        output = self.get_output('get pods --all-namespaces')
         return [line.split() for line in output[1:-1]]
 
     def find_pattern_in_data(self, pattern: str, data: Iterable):
