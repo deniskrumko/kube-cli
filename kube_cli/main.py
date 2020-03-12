@@ -214,8 +214,8 @@ class KubeCLI:
 
           kube <g>all ns</g>\t\t\t\tList of all namespaces
           kube <g>all pods</g>\t\t\t\tList of all pods in all namespaces
-          kube <g>find ns</g> <b><query></b>\t\tFind namespace
-          kube <g>find pod</g> <b><query></b>\t\tFind pod
+          kube <g>find ns</g> <b><query></b>\t\t\tFind namespace
+          kube <g>find pod</g> <b><query></b>\t\t\tFind pod
           kube <b><namespace></b>\t\t\tList of pods in namespace
           kube <b><namespace></b> <g>pods</g>\t\t\tList of pods in namespace
           kube <b><namespace></b> <b><pod></b> <g>logs</g>\t\tStream logs from pod
