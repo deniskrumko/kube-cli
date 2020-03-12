@@ -177,7 +177,7 @@ class KubeCLI:
             print_results=False,
         )
         if not values:
-            self.print('\n<y>Found more than namespace/pod</y>')
+            self.print('\n<y>Found more than 1 namespace & pod</y>')
             return self.print_namespaces_and_pods(
                 results=results,
                 namespace_query=namespace,
@@ -228,9 +228,8 @@ class KubeCLI:
 
           > kube <b>1234 redismetric</b>
           > kube jira-<b>1234</b> rd-jira-5103-<b>redis-metrics</b>-57dff4f8b7-5c49k
-
         ''' # noqa
-        self.print(help_text.replace('\n        ', '\n'))
+        self.print(help_text.replace('\n        ', '\n').rstrip())
 
     # Helper methods
 
