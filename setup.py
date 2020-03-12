@@ -18,7 +18,7 @@ setup(
     license="MIT",
     entry_points={
         'console_scripts': [
-            'kube = kube.main:main',
+            'kube = kube_cli.main:main',
         ],
     },
     packages=['kube_cli'],

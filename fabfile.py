@@ -38,7 +38,7 @@ def build():
 @task
 def pip_dev():
     """Show command how to install dev package."""
-    print('pip3 install --index-url {test_pypy}/simple/ --no-deps kube-cli')
+    print(f'pip3 install --index-url {test_pypy}/simple/ --no-deps kube-cli')
 
 
 @task
