@@ -27,36 +27,43 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-Python 3.6 or higher
+- python 3.6 or higher
+- `kubectl <https://kubernetes.io/docs/tasks/tools/install-kubectl/>`_
+- kubectl config file in ~/.kube/config
 
 How to use
 ^^^^^^^^^^
 
 .. code-block:: bash
 
-    kube help                     # show all commands
+    # show all commands
+    kube help
 
-    kube all ns                   # List of all namespaces
-    kube all pods                 # List of all pods in all namespaces
+    # List all namespaces / pods
+    kube all ns
+    kube all pods
 
-    kube find ns <query>		     	# Find namespace
-    kube find pod <query>			    # Find pod
+    # Find namespace / pod
+    kube find ns <query>
+    kube find pod <query>
 
-    kube <namespace>			        # List of pods in namespace
-    kube <namespace> pods			    # List of pods in namespace
+    # List of pods in namespace
+    kube <namespace>
+    kube <namespace> pods
 
-    kube <namespace> <pod> logs		# Stream logs from pod
-    kube <namespace> <pod> bash		# Run bash in pod
+    # Operations with pod
+    kube <namespace> <pod> logs
+    kube <namespace> <pod> bash
 
 Fuzzy search
 ^^^^^^^^^^^^
 
-Fuzzy search is a killing feature that allows to search namespaces and pods by short eqivalents.
+Fuzzy search is a killing feature that allows to search namespaces and pods by short equivalents.
 
 For example, following commands are equal:
 
 .. code-block:: bash
 
-    kube 1234 redismetric
+    kube 1234 redismetric logs
 
-    kube jira-1234 rd-jira-5103-redis-metrics-57dff4f8b7-5c49k
+    kube jira-1234 rd-jira-5103-redis-metrics-57dff4f8b7-5c49k logs
