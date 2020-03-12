@@ -21,7 +21,7 @@ setup(
             'kube = kube.main:main',
         ],
     },
-    packages=['kube-cli'],
+    packages=['kube_cli'],
     python_requires=">=3.6",
     keywords='CLI, Kubernetes',
     classifiers=[
