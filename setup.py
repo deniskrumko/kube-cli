@@ -2,12 +2,14 @@
 
 from setuptools import setup
 
+from kube_cli import get_version
+
 with open('README.rst') as f:
     readme = f.read()
 
 setup(
     name='kube-cli',
-    version='0.0.1',
+    version=get_version(),
     description='CLI for Kubernetes that simplifies usage of kubectl',
     long_description=readme,
     author='Denis Krumko',
