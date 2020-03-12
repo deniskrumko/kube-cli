@@ -1,4 +1,4 @@
-KUBE-CLI
+kube-cli
 ========
 
 .. image:: https://img.shields.io/pypi/v/kube-cli.svg
@@ -17,38 +17,46 @@ KUBE-CLI
 Command line interface for Kubernetes that simplifies usage of kubectl.
 
 
-TODO
-====
+Installation
+^^^^^^^^^^^^
+.. code-block:: bash
 
-- Умный поиск pod'a
-- Readme
-- Обработка ошибок
-- Refactor
-- get_version (https://github.com/mathiasertl/fabric/blob/master/setup.py)
+    pip install kube-cli
 
-1. Help
-kube
-kube --help
-kube help
 
-2.1 All namespaces
+Requirements
+^^^^^^^^^^^^
 
-kube all
-- Parses command: kubectl get pods --all-namespaces
+Python 3.6 or higher
 
-2. Namespace
+How to use
+^^^^^^^^^^
 
-kube <namespace>
-- Namespace not found
-- If found then show "kube <namespace> pods"
+.. code-block:: bash
 
-3. Pods
+    kube help                     # show all commands
 
-kube <namespace> pods
-- List of pods
+    kube all ns                   # List of all namespaces
+    kube all pods                 # List of all pods in all namespaces
 
-4. Logs of pod
-kube <namespace> <pod> logs
+    kube find ns <query>		     	# Find namespace
+    kube find pod <query>			    # Find pod
 
-5. Bash
-kube <namespace> <pod> bash
+    kube <namespace>			        # List of pods in namespace
+    kube <namespace> pods			    # List of pods in namespace
+
+    kube <namespace> <pod> logs		# Stream logs from pod
+    kube <namespace> <pod> bash		# Run bash in pod
+
+Fuzzy search
+^^^^^^^^^^^^
+
+Fuzzy search is a killing feature that allows to search namespaces and pods by short eqivalents.
+
+For example, following commands are equal:
+
+.. code-block:: bash
+
+    kube 1234 redismetric
+
+    kube jira-1234 rd-jira-5103-redis-metrics-57dff4f8b7-5c49k
