@@ -195,7 +195,6 @@ class KubeCLI:
     def stream_pod_logs(self, namespace: str, pod_name: str):
         """Stream logs from pod."""
         self.print_namespace_and_pod_name(namespace, pod_name)
-        input('Press enter to start streaming logs\n')
         self.execute(f'logs --namespace={namespace} -f {pod_name}')
 
     def run_bash_in_pod(self, namespace: str, pod_name: str):
