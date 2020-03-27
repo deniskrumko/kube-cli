@@ -147,12 +147,10 @@ class KubeCLI:
                 '-- Run bash in pod'
             )
 
-        if len(self.args) != 3:
-            return help_text()
-
         namespace = self.args[0].lower()
         pod_name = self.args[1].lower()
         command = self.args[2].lower()
+        flags = self.args[3:]
 
         clean_namespace = self.clear_str(namespace)
         clean_pod_name = self.clear_str(pod_name)
@@ -185,17 +183,18 @@ class KubeCLI:
             )
 
         if command == 'logs':
-            return self.stream_pod_logs(*values)
+            return self.stream_pod_logs(*values, flags=flags)
         if command == 'bash':
             return self.run_bash_in_pod(*values)
 
         self.print(f'\nUnknown command: <r>{command}</r>')
         return help_text()
 
-    def stream_pod_logs(self, namespace: str, pod_name: str):
+    def stream_pod_logs(self, namespace: str, pod_name: str, flags: Optional[Iterable[str]] = None):
         """Stream logs from pod."""
+        follow = '-f' if flags and '-f' in flags else ''
         self.print_namespace_and_pod_name(namespace, pod_name)
-        self.execute(f'logs --namespace={namespace} -f {pod_name}')
+        self.execute(f'logs --namespace={namespace} {pod_name} {follow}')
 
     def run_bash_in_pod(self, namespace: str, pod_name: str):
         """Run bash in pod."""
