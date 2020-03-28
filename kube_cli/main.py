@@ -139,19 +139,16 @@ class KubeCLI:
 
     def run_pod_commands(self):
         """Run pod commands."""
-        def help_text():
+        def help_text(namespace='<namespace>', pod_name='<pod>'):
             return self.print(
-                '\nkube <b><namespace></b> <b><pod></b> <g>logs</g> '
-                '-- Stream logs from pod'
-                '\nkube <b><namespace></b> <b><pod></b> <g>bash</g> '
+                f'\nkube <b>{namespace}</b> <b>{pod_name}</b> <g>logs</g> '
+                '-- Get logs from pod (use <g>-f</g> for following mode)'
+                f'\nkube <b>{namespace}</b> <b>{pod_name}</b> <g>bash</g> '
                 '-- Run bash in pod'
             )
 
         namespace = self.args[0].lower()
         pod_name = self.args[1].lower()
-        command = self.args[2].lower()
-        flags = self.args[3:]
-
         clean_namespace = self.clear_str(namespace)
         clean_pod_name = self.clear_str(pod_name)
         results = [
@@ -182,16 +179,34 @@ class KubeCLI:
                 pod_name_query=pod_name,
             )
 
+        if len(self.args) == 2:
+            # Show that namespace and pod exist
+            self.print_namespace_and_pod_name(
+                *values,
+                namespace_query=namespace,
+                pod_name_query=pod_name,
+                end='',
+            )
+            return help_text(namespace=namespace, pod_name=pod_name)
+
+        command = self.args[2].lower()
+        flags = self.args[3:]
+
         if command == 'logs':
-            return self.stream_pod_logs(*values, flags=flags)
+            return self.get_pod_logs(*values, flags=flags)
         if command == 'bash':
             return self.run_bash_in_pod(*values)
 
         self.print(f'\nUnknown command: <r>{command}</r>')
-        return help_text()
+        return help_text(namespace=namespace, pod_name=pod_name)
 
-    def stream_pod_logs(self, namespace: str, pod_name: str, flags: Optional[Iterable[str]] = None):
-        """Stream logs from pod."""
+    def get_pod_logs(
+        self,
+        namespace: str,
+        pod_name: str,
+        flags: Optional[Iterable[str]] = None,
+    ):
+        """Get logs from pod."""
         follow = '-f' if flags and '-f' in flags else ''
         self.print_namespace_and_pod_name(namespace, pod_name)
         self.execute(f'logs --namespace={namespace} {pod_name} {follow}')
@@ -216,7 +231,9 @@ class KubeCLI:
           kube <g>find pod</g> <b><query></b>\t\t\tFind pod
           kube <b><namespace></b>\t\t\tList of pods in namespace
           kube <b><namespace></b> <g>pods</g>\t\t\tList of pods in namespace
-          kube <b><namespace></b> <b><pod></b> <g>logs</g>\t\tStream logs from pod
+          kube <b><namespace></b> <b><pod></b> \t\tCheck if pod exists in namespace
+          kube <b><namespace></b> <b><pod></b> <g>logs</g>\t\tDump pod logs
+          kube <b><namespace></b> <b><pod></b> <g>logs -f</g>\tStream pod logs
           kube <b><namespace></b> <b><pod></b> <g>bash</g>\t\tRun bash in pod
 
         <g>Fuzzy search</g>
@@ -285,12 +302,24 @@ class KubeCLI:
                 )
             self.print(f'{namespace}{line_indent}{pod_name}')
 
-    def print_namespace_and_pod_name(self, namespace, pod_name):
+    def print_namespace_and_pod_name(
+        self,
+        namespace: str,
+        pod_name: str,
+        namespace_query: str = None,
+        pod_name_query: str = None,
+        end: str = '\n',
+    ):
         """Print single namespace and pod name."""
-        self.print(
-            f'\nNamespace:\t<g>{namespace}</g>'
-            f'\nPod name:\t<g>{pod_name}</g>\n'
-        )
+        namespace = namespace.replace(
+            namespace_query, f'<y>{namespace_query}</y>'
+        ) if namespace_query else f'<g>{namespace}</g>'
+
+        pod_name = pod_name.replace(
+            pod_name_query, f'<y>{pod_name_query}</y>'
+        ) if pod_name_query else f'<g>{pod_name}</g>'
+
+        self.print(f'\nNamespace:\t{namespace}\nPod name:\t{pod_name}{end}')
 
     def select_from_multiple_results(
         self,
