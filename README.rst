@@ -36,7 +36,7 @@ How to use
 
 .. code-block:: bash
 
-    # show all commands
+    # show help
     kube help
 
     # List all namespaces / pods
@@ -47,12 +47,18 @@ How to use
     kube find ns <query>
     kube find pod <query>
 
-    # List of pods in namespace
+    # Operations with namespace
     kube <namespace>
     kube <namespace> pods
 
+    # Scaling deployments
+    kube <namespace> scale
+    kube <namespace> scale <deployment>
+    kube <namespace> scale <deployment> <value>
+
     # Operations with pod
     kube <namespace> <pod> logs
+    kube <namespace> <pod> logs -f
     kube <namespace> <pod> bash
 
 Fuzzy search

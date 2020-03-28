@@ -44,9 +44,19 @@ class KubeCLI:
             )
 
         # kube <namespace>
+        if len(self.args) == 1:
+            namespace = self.get_namespace()
+            return self.print_namespace_and_pod_name(namespace=namespace)
+
         # kube <namespace> pods
-        if len(self.args) == 1 or self.args[1] == 'pods':
-            return self.get_pods_in_namespace()
+        # kube <namespace> scale
+        # kube <namespace> scale <deployment>
+        # kube <namespace> scale <deployment> <value>
+        if len(self.args) > 1:
+            if self.args[1] == 'pods':
+                return self.get_pods_in_namespace()
+            if self.args[1] == 'scale':
+                return self.manage_deployments()
 
         # kube <namespace> <pod> logs
         # kube <namespace> <pod> bash
@@ -82,25 +92,29 @@ class KubeCLI:
         if not namespaces:
             return self.print('\n<r>Cannot find any namespace</r>')
 
-        self.print('\n<g>All available namespaces</g>\n')
+        self.print('\n<g>All namespaces</g>\n')
         self.print_results(namespaces)
 
     def show_all_pods(self):
         """Show all existing pods."""
         self.print_namespaces_and_pods(results=self.request_data())
 
-    def get_pods_in_namespace(self):
-        """Get list of pods in single namespace."""
+    def get_namespace(self):
+        """Get namespace."""
         query = self.args[0].lower()
         results = self.find_namespace_by_query(query=query)
         if not results:
             return self.print(f'\n<r>No namespace matched query "{query}"</r>')
 
-        namespace = self.select_from_multiple_results(
+        return self.select_from_multiple_results(
             results=results,
             query=query,
             exact_match=self.args[0],
         )
+
+    def get_pods_in_namespace(self):
+        """Get list of pods in single namespace."""
+        namespace = self.get_namespace()
         if not namespace:
             return
 
@@ -108,8 +122,87 @@ class KubeCLI:
         if not output:
             return self.print(f'\n<r>No pods in namespace "{namespace}"</r>\n')
 
-        self.print(f'\n<g>Available pods in namespace "{namespace}"</g>\n')
+        self.print(f'\n<g>Pods in namespace "{namespace}"</g>\n')
         self.print_results([line.split()[0] for line in output])
+
+    def manage_deployments(self):
+        """Manage namespace deployments.
+
+        Command allows to see namespace deployments and scale them.
+
+        """
+        namespace = self.get_namespace()
+        if not namespace:
+            return
+
+        output = self.get_output(f'get deploy --namespace={namespace}')[:-1]
+        if not output:
+            return self.print(
+                f'\n<r>No deployments in namespace "{namespace}"</r>\n'
+            )
+
+        try:
+            query = self.clear_str(self.args[2].lower())
+        except IndexError:
+            query = None
+
+        try:
+            scale_value = int(self.args[3])
+        except IndexError:
+            scale_value = None
+        except ValueError:
+            return self.print(
+                f'\nScale value must be integer: <r>{self.args[3]}</r>'
+            )
+
+        results = []
+        matches = []
+
+        for i, line in enumerate(output):
+            if i == 0:
+                results.append(f'<g>{line}</g>')
+                continue
+
+            line = line.replace('0/0', '<r>0/0</r>')
+            line = line.replace('0/1', '<y>0/1</y>')
+
+            if query:
+                if query in self.clear_str(line):
+                    matches.append(line)
+                    results.append(self.color_query(line, query))
+            else:
+                results.append(line)
+
+        if query and not matches:
+            return self.print(
+                f'\n<r>No deployments matched query "{query}"</r>'
+            )
+
+        self.print(f'\n<g>Deployments in namespace "{namespace}"</g>\n')
+        self.print('\n'.join(results))
+
+        if scale_value is not None:
+            if len(matches) > 1:
+                return self.print('\n<r>Found more than 1 result</r>')
+
+            deployment = matches[0].split()[0]
+            colored_value = (
+                f'<g>{scale_value}</g>'
+                if scale_value
+                else f'<r>{scale_value}</r>'
+            )
+            self.print(f'\nScaling to {colored_value}\n')
+            return self.execute(
+                f'scale deploy {deployment} --replicas={scale_value} '
+                f'--namespace={namespace}'
+            )
+
+        if query:
+            args = ' '.join(self.args)
+            return self.print(
+                f'\nkube <b>{args}</b> <g>1</g>  -- Create pod'
+                f'\nkube <b>{args}</b> <g>0</g>  -- Delete pod'
+            )
 
     def find_namespace(self, query: str):
         """Find namespace by query."""
@@ -227,11 +320,16 @@ class KubeCLI:
 
           kube <g>all ns</g>\t\t\t\tList of all namespaces
           kube <g>all pods</g>\t\t\t\tList of all pods in all namespaces
+
           kube <g>find ns</g> <b><query></b>\t\t\tFind namespace
           kube <g>find pod</g> <b><query></b>\t\t\tFind pod
-          kube <b><namespace></b>\t\t\tList of pods in namespace
-          kube <b><namespace></b> <g>pods</g>\t\t\tList of pods in namespace
-          kube <b><namespace></b> <b><pod></b> \t\tCheck if pod exists in namespace
+
+          kube <b><namespace></b>\t\t\tCheck that namespace exist
+          kube <b><namespace></b> <g>pods</g>\t\t\tList of pods
+          kube <b><namespace></b> <g>scale</g>\t\tList of deployments
+          kube <b><namespace></b> <g>scale</g> <b><query></b> <g>N</g>\tFind and scale deployment to N
+
+          kube <b><namespace></b> <b><pod></b> \t\tCheck that pod exist
           kube <b><namespace></b> <b><pod></b> <g>logs</g>\t\tDump pod logs
           kube <b><namespace></b> <b><pod></b> <g>logs -f</g>\tStream pod logs
           kube <b><namespace></b> <b><pod></b> <g>bash</g>\t\tRun bash in pod
@@ -270,7 +368,7 @@ class KubeCLI:
 
         print(msg)
 
-    def print_results(self, results: Iterable, query=None):
+    def print_results(self, results: Iterable, query: str = None):
         """Print iterable results with colored query match."""
         for value in results:
             if query:
@@ -304,22 +402,24 @@ class KubeCLI:
 
     def print_namespace_and_pod_name(
         self,
-        namespace: str,
-        pod_name: str,
+        namespace: str = None,
+        pod_name: str = None,
         namespace_query: str = None,
         pod_name_query: str = None,
         end: str = '\n',
     ):
         """Print single namespace and pod name."""
-        namespace = namespace.replace(
-            namespace_query, f'<y>{namespace_query}</y>'
-        ) if namespace_query else f'<g>{namespace}</g>'
+        if namespace:
+            namespace = self.color_query(
+                namespace, namespace_query
+            ) if namespace_query else f'<g>{namespace}</g>'
+            self.print(f'\nNamespace:\t{namespace}')
 
-        pod_name = pod_name.replace(
-            pod_name_query, f'<y>{pod_name_query}</y>'
-        ) if pod_name_query else f'<g>{pod_name}</g>'
-
-        self.print(f'\nNamespace:\t{namespace}\nPod name:\t{pod_name}{end}')
+        if pod_name:
+            pod_name = self.color_query(
+                pod_name, pod_name_query
+            ) if pod_name_query else f'<g>{pod_name}</g>'
+            self.print(f'Pod name:\t{pod_name}{end}')
 
     def select_from_multiple_results(
         self,
@@ -388,6 +488,10 @@ class KubeCLI:
     def clear_str(self, value: str) -> str:
         """Clear any redundant symbols from value."""
         return value.lower().replace(' ', '').replace('-', '').replace('_', '')
+
+    def color_query(self, value: str, query: str) -> str:
+        """Add color to query in value."""
+        return value.replace(query, f'<y>{query}</y>') if query else value
 
 
 def main():
