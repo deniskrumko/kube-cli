@@ -13,6 +13,10 @@ kube-cli
     :target: https://raw.githubusercontent.com/deniskrumko/kube-cli/master/LICENSE
     :alt: License
 
+.. image:: https://img.shields.io/pypi/dm/kube-cli
+    :target: https://pypistats.org/packages/kube-cli
+    :alt: Downloads
+
 
 Command line interface for Kubernetes that simplifies usage of kubectl.
 
