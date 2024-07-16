@@ -20,6 +20,10 @@ kube-cli
 
 Command line interface for Kubernetes that simplifies usage of kubectl.
 
+☠️ This project is no longer supported. It's not quite usefull in this shape. It's basically how I used it on my prev job.
+
+I recommend you to use `K9S <https://k9scli.io/>`_ instead and live a happy life 👌
+
 
 Installation
 ^^^^^^^^^^^^
